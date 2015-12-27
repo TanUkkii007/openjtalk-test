@@ -214,6 +214,31 @@ namespace {
         ASSERT_EQ(i, size);
     }
     
+    TEST(OpenJtalkTest, JPCommon_make_label) {
+        NJD njd;
+        NJD_initialize(&njd);
+        int size = 1;
+        const char* feature[] = {
+            "ありがとうございました,感動詞,*,*,*,*,*,ありがとう:ございました,アリガトウ:ゴザイマシタ,アリガトー:ゴザイマシ’タ,2/5:4/6,-1"
+        };
+        const char* answer[] = {"アリガトー", "ゴザイマシ’タ"};
+        mecab2njd(&njd, const_cast<char**>(feature), size);
+        njd_set_pronunciation(&njd);
+        JPCommon jpcommon;
+        JPCommon_initialize(&jpcommon);
+        njd2jpcommon(&jpcommon, &njd);
+        JPCommon_make_label(&jpcommon);
+        
+        JPCommonNode *node = jpcommon.head;
+        for (node = jpcommon.head; node != NULL; node = node->next) {
+            printf("pron: %s, pos: %s, ctype: %s, cform: %s, chain_flag: %d\n", node->pron, node->pos, node->ctype, node->cform, node->chain_flag);
+        }
+        JPCommonLabel* label = jpcommon.label;
+        for (int i = 0; i < label->size; ++i) {
+            printf("feature: %s\n", label->feature[i]);
+        }
+    }
+    
     
     TEST(OpenJtalkTest, HTS_Engine_load) {
         std::string thisfile(__FILE__);
