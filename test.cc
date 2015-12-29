@@ -234,13 +234,25 @@ namespace {
             printf("pron: %s, pos: %s, ctype: %s, cform: %s, chain_flag: %d\n", node->pron, node->pos, node->ctype, node->cform, node->chain_flag);
         }
         JPCommonLabel* label = jpcommon.label;
+        JPCommonLabelPhoneme* phoneme;
+        JPCommonLabelWord* word;
+        JPCommonLabelAccentPhrase* accent;
+        JPCommonLabelBreathGroup* breath;
+        for (phoneme = label->phoneme_head; phoneme != NULL; phoneme = phoneme->next) {
+            printf("phoneme: %s, mora: %s\n", phoneme->phoneme, phoneme->up->mora);
+        }
+        for (word = label->word_head; word != NULL; word = word->next) {
+            printf("word: %s, pos: %s\n", word->pron, word->pos);
+        }
+        for (accent = label->accent_head; accent != NULL; accent = accent->next) {
+            printf("accent: %d, emotion: %s\n", accent->accent, accent->emotion);
+        }
         for (int i = 0; i < label->size; ++i) {
             printf("feature: %s\n", label->feature[i]);
         }
     }
     
-    
-    TEST(OpenJtalkTest, HTS_Engine_load) {
+    TEST(OpenJtalkTest, HTS_Engine_synthesize_from_strings) {
         std::string thisfile(__FILE__);
         std::string basedir = thisfile.substr(0, thisfile.find_last_of("/"));
         std::string voice = basedir + "/node_modules/node-openjtalk/voice/hts_voice_nitech_jp_atr503_m001-1.05 2/nitech_jp_atr503_m001.htsvoice";
@@ -248,8 +260,45 @@ namespace {
         HTS_Engine engine;
         HTS_Engine_initialize(&engine);
         HTS_Engine_load(&engine, voices, 1);
-        ASSERT_EQ(engine.condition.sampling_frequency, 48000);
+        
+        NJD njd;
+        NJD_initialize(&njd);
+        int size = 1;
+        const char* feature[] = {
+            "ありがとうございました,感動詞,*,*,*,*,*,ありがとう:ございました,アリガトウ:ゴザイマシタ,アリガトー:ゴザイマシ’タ,2/5:4/6,-1"
+        };
+
+        mecab2njd(&njd, const_cast<char**>(feature), size);
+        njd_set_pronunciation(&njd);
+        JPCommon jpcommon;
+        JPCommon_initialize(&jpcommon);
+        njd2jpcommon(&jpcommon, &njd);
+        JPCommon_make_label(&jpcommon);
+        
+        HTS_Engine_synthesize_from_strings(&engine, jpcommon.label->feature, jpcommon.label->size);
+        
+        HTS_LabelString* string;
+        HTS_Question* question;
+        for (string = engine.label.head; string != NULL; string = string->next) {
+            printf("HTS_LabelString: %s, start: %f, end: %f\n", string->name, string->start, string->end);
+        }
+        
+        for (question = engine.ms.duration->question; question != NULL; question = question->next) {
+            printf("HTS_Question#head: %s\n", question->head->string);
+        }
     }
+    
+    
+//    TEST(OpenJtalkTest, HTS_Engine_load) {
+//        std::string thisfile(__FILE__);
+//        std::string basedir = thisfile.substr(0, thisfile.find_last_of("/"));
+//        std::string voice = basedir + "/node_modules/node-openjtalk/voice/hts_voice_nitech_jp_atr503_m001-1.05 2/nitech_jp_atr503_m001.htsvoice";
+//        char* voices[] = {const_cast<char*>(voice.c_str())};
+//        HTS_Engine engine;
+//        HTS_Engine_initialize(&engine);
+//        HTS_Engine_load(&engine, voices, 1);
+//        ASSERT_EQ(engine.condition.sampling_frequency, 48000);
+//    }
     
 }  // namespace
 
