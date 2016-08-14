@@ -1,6 +1,20 @@
 #include "gtest/gtest.h"
+#include "mecab.h"
+#include "njd.h"
+#include "jpcommon.h"
 #include "HTS_engine.h"
-#include "open_jtalk_lib.h"
+#include "HTS_hidden.h"
+
+/* Sub headers */
+#include "text2mecab.h"
+#include "mecab2njd.h"
+#include "njd_set_pronunciation.h"
+#include "njd_set_digit.h"
+#include "njd_set_accent_phrase.h"
+#include "njd_set_accent_type.h"
+#include "njd_set_unvoiced_vowel.h"
+#include "njd_set_long_vowel.h"
+#include "njd2jpcommon.h"
 
 namespace {
     
@@ -288,6 +302,33 @@ namespace {
         }
     }
     
+    TEST(OpenJtalkTest, HTS_Vocoder_synthesize) {
+        size_t m = 34;
+        double lf0 = -10000000000.000000;
+        size_t nlpf = 31;
+        double alpha = 0.550000;
+        double beta = 0.000000;
+        double volume = 1.000000;
+        double spectrum[] = {0.818595, 1.359464, 0.571320, 0.457894, 0.210681, 0.218052, 0.153583, 0.109085, 0.141901, 0.192637, 0.111708, 0.084790, 0.023146, 0.048018, 0.048468, 0.058492, 0.030779, 0.066592, 0.083832, 0.090839, 0.074053, 0.063111, 0.079848, 0.085349, 0.057884, 0.048058, 0.038772, 0.053205, 0.063751, 0.060228, 0.034588, 0.043284, 0.040019, 0.037399};
+        double lpf[] = {-0.005523, -0.009832, -0.008729, -0.000428, 0.011955, 0.020770, 0.017779, 0.000000, -0.026049, -0.045020, -0.039150, 0.002198, 0.074922, 0.159196, 0.226591, 0.252320, 0.226591, 0.159196, 0.074922, 0.002198, -0.039150, -0.045020, -0.026049, 0.000000, 0.017779, 0.020770, 0.011955, -0.000428, -0.008729, -0.009832, -0.005523};
+        
+        size_t stage = 0;
+        HTS_Boolean use_log_gain = FALSE;
+        size_t sampling_rate = 48000;
+        size_t fperiod = 240;
+        HTS_Vocoder v;
+        HTS_Vocoder_initialize(&v, m, stage, use_log_gain, sampling_rate, fperiod);
+        double* rawdata = (double*) malloc(m * sizeof(double));
+        HTS_Audio* audio = NULL;
+        HTS_Vocoder_synthesize(&v, m, lf0, spectrum, nlpf, lpf, alpha, beta, volume, rawdata, audio);
+        printf("rawdata = [");
+        for (int i = 0; i < m; i++) {
+            printf("%f, ", rawdata[i]);
+        }
+        printf("]\n");
+        //free(rawdata);
+    }
+
     
 //    TEST(OpenJtalkTest, HTS_Engine_load) {
 //        std::string thisfile(__FILE__);
